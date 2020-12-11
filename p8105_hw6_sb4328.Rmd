@@ -12,8 +12,73 @@ library(magrittr)
 ```
 
 ## Problem 1
+Manipulating the dataset to our preferences. Creating a city_state variable. Creating a binary resolution variable. Removing cities that do not report race from dataset.
+```{r}
+homicide=
+  read_csv("data/homicide-data.csv", na=c("", "NA", "Unknown")) %>%
+  mutate(city_state=str_c(city, state, sep="_"),
+         victim_age=as.numeric(victim_age),
+    resolution=case_when(
+    disposition=="Closed without arrest" ~ 0,
+    disposition=="Closed by arrest" ~ 1,
+    disposition=="Open/No arrest" ~ 0)) %>%
+  filter(
+    victim_race %in% c("White", "Black"),
+    city_state != "Tulsa_AL", 
+    city_state != "Dallas_TX",
+    city_state != "Phoenix_AZ",
+    city_state != "Kansas City_MO") %>%
+  select(city_state, resolution, victim_age, victim_race, victim_sex)
+```
+Focusing on the city of Baltimore, MD.
+```{r}
+baltimore=
+  homicide %>% filter(city_state=="Baltimore_MD")
 
-
+glm(resolution ~ victim_age + victim_race + victim_sex,
+    data=baltimore,
+    family=binomial()) %>%
+  broom::tidy() %>%
+  mutate(
+    OR=exp(estimate),
+    CI_lower=exp(estimate)-1.96*std.error,
+    CI_upper=exp(estimate)+1.96*std.error
+  ) %>%
+  select(term, OR, starts_with("CI")) %>%
+  knitr::kable(digits=3)
+```
+Applying this across all the remaining cities in the dataset.
+```{r}
+hom_results=
+homicide %>%
+  nest(data = -city_state) %>%
+  mutate(
+    models=
+      map(.x=data, 
+          ~glm(resolution ~ victim_age + victim_race + victim_sex,
+          data=.x,
+          family=binomial())),
+    results=map(models, broom::tidy)
+  ) %>%
+  select(city_state, results) %>%
+  unnest(results) %>%
+   mutate(
+    OR=exp(estimate),
+    CI_lower=exp(estimate)-1.96*std.error,
+    CI_upper=exp(estimate)+1.96*std.error
+  ) %>%
+  select(term, OR, starts_with("CI"))
+```
+Creating a plot of hom_results.
+```{r}
+hom_results %>%
+  filter(term == "victim_sexMale") %>%
+  mutate(city_state = fct_reorder(city_state, OR)) %>%
+  ggplot(aes(x=city_state, y=OR)) +
+  geom_point() +
+  geom_errorbar(aes(ymin=CI_lower, ymax=CI_upper)) +
+  theme(axis.text.x=element_text(angle=90, hjust=1))
+```
 ## Problem 2
 
 

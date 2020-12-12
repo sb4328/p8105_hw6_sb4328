@@ -9,6 +9,8 @@ This is my solution to Homework 6.
 ```{r setup}
 library(tidyverse)
 library(magrittr)
+library(modelr)
+library(mgcv)
 ```
 
 ## Problem 1
@@ -125,4 +127,6 @@ broom::tidy(birthweight_m3)
 par(mfrow=c(2,2))
 plot(birthweight_m3)
 ```
+Comparing the models, we will be evaluating the models by the AICs. The most desirable model will have the lowest AIC. Our first model, looking at mother's age, height, and weight, has an AIC of 66030.46. The second model, looking at birth length and gestational age has an AIC of 62770.64. The third model, looking at head circumference, length, and sex, has an 61501.19. Looking at all of these AIC values, the third model has the lowest AIC value leading me to conclude that the third model is preferred.  
+
 ##Problem 3

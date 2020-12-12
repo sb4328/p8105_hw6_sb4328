@@ -6,7 +6,7 @@ output: github_document
 
 This is my solution to Homework 6.
 
-```{r setup}
+```{r setup, echo=FALSE}
 library(tidyverse)
 library(magrittr)
 library(modelr)
@@ -130,3 +130,42 @@ plot(birthweight_m3)
 Comparing the models, we will be evaluating the models by the AICs. The most desirable model will have the lowest AIC. Our first model, looking at mother's age, height, and weight, has an AIC of 66030.46. The second model, looking at birth length and gestational age has an AIC of 62770.64. The third model, looking at head circumference, length, and sex, has an 61501.19. Looking at all of these AIC values, the third model has the lowest AIC value leading me to conclude that the third model is preferred.  
 
 ##Problem 3
+```{r, echo=FALSE}
+weather_df = 
+  rnoaa::meteo_pull_monitors(
+    c("USW00094728"),
+    var = c("PRCP", "TMIN", "TMAX"), 
+    date_min = "2017-01-01",
+    date_max = "2017-12-31") %>%
+  mutate(
+    name = recode(id, USW00094728 = "CentralPark_NY"),
+    tmin = tmin / 10,
+    tmax = tmax / 10) %>%
+  select(name, id, everything())
+```
+
+```{r, echo=FALSE}
+lm(tmax ~ tmin, data=weather_df) %>% 
+  broom::tidy() %>% 
+  knitr::kable(digits = 3)
+
+boot_weather=function(weather_df) {
+  sample_frac(weather_df, replace = TRUE)
+}
+
+boot_weather(weather_df) %>% 
+  ggplot(aes(x=tmin, y=tmax)) + 
+  geom_point(alpha = .5) +
+  stat_smooth(method = "lm")
+
+weather_df %>% 
+  modelr::bootstrap(n = 5000) %>% 
+  mutate(
+    models = map(strap, ~lm(tmax ~ tmin, data = .x) ),
+    results = map(models, broom::tidy)) %>% 
+  select(-strap, -models) %>% 
+  unnest(results) %>% 
+  group_by(term) %>% 
+  summarize(boot_se = sd(estimate))
+```
+

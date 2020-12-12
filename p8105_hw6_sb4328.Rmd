@@ -13,7 +13,7 @@ library(magrittr)
 
 ## Problem 1
 Manipulating the dataset to our preferences. Creating a city_state variable. Creating a binary resolution variable. Removing cities that do not report race from dataset.
-```{r}
+```{r, echo=FALSE, include=FALSE}
 homicide=
   read_csv("data/homicide-data.csv", na=c("", "NA", "Unknown")) %>%
   mutate(city_state=str_c(city, state, sep="_"),
@@ -31,7 +31,7 @@ homicide=
   select(city_state, resolution, victim_age, victim_race, victim_sex)
 ```
 Focusing on the city of Baltimore, MD.
-```{r}
+```{r, echo=FALSE}
 baltimore=
   homicide %>% filter(city_state=="Baltimore_MD")
 
@@ -48,7 +48,7 @@ glm(resolution ~ victim_age + victim_race + victim_sex,
   knitr::kable(digits=3)
 ```
 Applying this across all the remaining cities in the dataset.
-```{r}
+```{r, echo=FALSE}
 hom_results=
 homicide %>%
   nest(data = -city_state) %>%
@@ -70,7 +70,7 @@ homicide %>%
   select(term, OR, starts_with("CI"))
 ```
 Creating a plot of hom_results.
-```{r}
+```{r, echo=FALSE}
 hom_results %>%
   filter(term == "victim_sexMale") %>%
   mutate(city_state = fct_reorder(city_state, OR)) %>%
@@ -80,6 +80,49 @@ hom_results %>%
   theme(axis.text.x=element_text(angle=90, hjust=1))
 ```
 ## Problem 2
+Loading and cleaning the data for regression analysis.
+```{r, echo=FALSE, include=FALSE}
+birthweight=
+  read_csv("data/birthweight.csv")
+```
+Proposing a regression model for birthweight. For my own model I will be seeing the effect of mother's weight at birth, mother's age at birth, and mother's height.
+```{r, echo=FALSE}
+birthweight_m1=
+ lm(bwt ~ delwt + mheight + momage + mheight*delwt + momage*delwt + momage*mheight + delwt*mheight*momage,
+    data=birthweight)
 
+summary(birthweight_m1)
+broom::glance(birthweight_m1)
+broom::tidy(birthweight_m1)
 
+par(mfrow=c(2,2))
+plot(birthweight_m1)
+```
+Creating a regression model using length at birth and gestational age as predictors (main effects only).
+```{r, echo=FALSE}
+birthweight_m2=
+ lm(bwt ~ blength + gaweeks,
+    data=birthweight)
+
+summary(birthweight_m2)
+broom::glance(birthweight_m2)
+broom::tidy(birthweight_m2)
+
+par(mfrow=c(2,2))
+plot(birthweight_m2)
+```
+Creating a regression model using head circumference, length, sex, and all interactions (including the three-way interaction) between these.
+```{r,echo=FALSE}
+birthweight_m3=
+ lm(bwt ~ bhead + blength+ babysex + bhead*blength + bhead*babysex +
+      blength*babysex + bhead*blength*babysex,
+    data=birthweight)
+
+summary(birthweight_m3)
+broom::glance(birthweight_m3)
+broom::tidy(birthweight_m3)
+
+par(mfrow=c(2,2))
+plot(birthweight_m3)
+```
 ##Problem 3
